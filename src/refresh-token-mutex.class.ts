@@ -1,13 +1,38 @@
 import {Queue} from "./queue.class";
 
+type AnyFunction = (...params: any[]) => any;
+
 export class RefreshTokenMutex {
+	constructor(
+		private readonly refresh: AnyFunction,
+		private readonly refreshCondition: AnyFunction
+	) { }
 
 	private mayDoRequests: boolean = true;
 
 	private queue: Queue = new Queue();
 
-	public startRequest() {
+	public async startRequest(
+		requestFunction: AnyFunction,
+		refreshCondition: (...params: any[]) => boolean,
+	): Promise<any> {
+		// NOT BLOCKED
+		if (this.mayDoRequests) {
 
+			// execute
+			const response = await requestFunction();
+
+			// if a token must be refreshed
+			if (refreshCondition(response)) {
+				this.block();
+				await this.refresh();
+				this.unblock();
+			}
+
+			return this.startRequest(requestFunction, refreshCondition);
+		} else { // BLOCKED
+			this.queue.push(requestFunction);
+		}
 	}
 
 	private block() {
