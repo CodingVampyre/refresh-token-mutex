@@ -5,7 +5,6 @@ type AnyFunction = (...params: any[]) => any;
 export class RefreshTokenMutex {
 	constructor(
 		private readonly refresh: AnyFunction,
-		private readonly refreshCondition: AnyFunction
 	) { }
 
 	private mayDoRequests: boolean = true;
@@ -27,9 +26,10 @@ export class RefreshTokenMutex {
 				this.block();
 				await this.refresh();
 				this.unblock();
+				return this.startRequest(requestFunction, refreshCondition);
 			}
 
-			return this.startRequest(requestFunction, refreshCondition);
+			return response;
 		} else { // BLOCKED
 			this.queue.push(requestFunction);
 		}
