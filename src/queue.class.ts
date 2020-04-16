@@ -1,16 +1,20 @@
+import { EventEmitter } from 'events';
+import { v1 as uuid } from 'uuid';
 
-type IRequestFunction = (...params: any[]) => Promise<any>;
+export class Queue extends EventEmitter {
 
-export class Queue {
+	private requestStack: string[] = [];
 
-	private requestStack: IRequestFunction[] = [];
-
-	public push(requestFunction: IRequestFunction) {
-		this.requestStack.push(requestFunction);
+	public push(): string {
+		const id = uuid();
+		this.requestStack.push(id);
+		return id;
 	}
 
 	public resolve() {
-		for (const requestFunction of this.requestStack) { requestFunction().catch() }
+		for (const requestIds of this.requestStack) {
+			this.emit(requestIds);
+		}
 	}
 
 }

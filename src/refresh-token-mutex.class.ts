@@ -23,24 +23,23 @@ export class RefreshTokenMutex {
 
 			// if a token must be refreshed
 			if (refreshCondition(response)) {
-				this.block();
+				this.mayDoRequests = false;
 				await this.refresh();
-				this.unblock();
+				this.mayDoRequests = true;
+				this.queue.resolve();
 				return this.startRequest(requestFunction, refreshCondition);
 			}
 
 			return response;
 		} else { // BLOCKED
-			this.queue.push(requestFunction);
+
+			console.log('blocked');
+			return new Promise((resolve, reject) => {
+				this.queue.on(this.queue.push(), () => {
+					resolve(this.startRequest(requestFunction, refreshCondition));
+				});
+			});
+
 		}
-	}
-
-	private block() {
-		this.mayDoRequests = false;
-	}
-
-	private unblock() {
-		this.mayDoRequests = true;
-		this.queue.resolve();
 	}
 }
